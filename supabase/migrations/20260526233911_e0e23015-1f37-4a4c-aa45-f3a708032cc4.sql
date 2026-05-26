@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Public read project media objects" ON storage.objects;
