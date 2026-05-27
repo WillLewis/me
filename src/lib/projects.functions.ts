@@ -1,7 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabasePublicServer } from "@/integrations/supabase/client.public.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getPlaceholderProjectBySlug, placeholderProjects } from "@/lib/placeholder-projects";
+import { siteConfig } from "@/lib/site-config";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ProjectRow = Tables<"projects">;
+type ProjectLinkRow = Tables<"project_links">;
 
 export type ProjectLink = {
   id: string;
@@ -28,7 +35,17 @@ export type Project = {
   links: ProjectLink[];
 };
 
-function mapRow(row: any, links: any[] = []): Project {
+function isProjectMetric(value: unknown): value is ProjectMetric {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    typeof (value as { label?: unknown }).label === "string" &&
+    typeof (value as { value?: unknown }).value === "string"
+  );
+}
+
+function mapRow(row: ProjectRow, links: ProjectLinkRow[] = []): Project {
   return {
     id: row.id,
     slug: row.slug,
@@ -40,7 +57,7 @@ function mapRow(row: any, links: any[] = []): Project {
     media_type: row.media_type,
     poster_url: row.poster_url,
     order_index: row.order_index,
-    metrics: Array.isArray(row.metrics) ? row.metrics : [],
+    metrics: Array.isArray(row.metrics) ? row.metrics.filter(isProjectMetric) : [],
     links: links
       .filter((l) => l.project_id === row.id)
       .sort((a, b) => a.order_index - b.order_index)
@@ -56,35 +73,46 @@ function mapRow(row: any, links: any[] = []): Project {
 
 // Public: list all projects with links
 export const listProjects = createServerFn({ method: "GET" }).handler(async () => {
-  const { data: projects, error } = await supabaseAdmin
+  if (siteConfig.placeholderContent) return placeholderProjects;
+
+  const { data: projects, error } = await supabasePublicServer
     .from("projects")
     .select("*")
     .order("order_index", { ascending: true });
   if (error) throw new Error(error.message);
 
   const ids = (projects ?? []).map((p) => p.id);
-  const { data: links } = ids.length
-    ? await supabaseAdmin.from("project_links").select("*").in("project_id", ids)
-    : { data: [] as any[] };
+  let links: ProjectLinkRow[] = [];
+  if (ids.length) {
+    const { data: linkRows, error: linksError } = await supabasePublicServer
+      .from("project_links")
+      .select("*")
+      .in("project_id", ids);
+    if (linksError) throw new Error(linksError.message);
+    links = linkRows ?? [];
+  }
 
-  return (projects ?? []).map((p) => mapRow(p, links ?? []));
+  return (projects ?? []).map((p) => mapRow(p, links));
 });
 
 // Public: get one project by slug
 export const getProjectBySlug = createServerFn({ method: "GET" })
   .inputValidator((d: { slug: string }) => z.object({ slug: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
-    const { data: project, error } = await supabaseAdmin
+    if (siteConfig.placeholderContent) return getPlaceholderProjectBySlug(data.slug);
+
+    const { data: project, error } = await supabasePublicServer
       .from("projects")
       .select("*")
       .eq("slug", data.slug)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!project) return null;
-    const { data: links } = await supabaseAdmin
+    const { data: links, error: linksError } = await supabasePublicServer
       .from("project_links")
       .select("*")
       .eq("project_id", project.id);
+    if (linksError) throw new Error(linksError.message);
     return mapRow(project, links ?? []);
   });
 
@@ -104,7 +132,11 @@ export const checkAdmin = createServerFn({ method: "GET" })
 
 const projectInput = z.object({
   id: z.string().uuid().optional(),
-  slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/, "lowercase letters, numbers, and hyphens only"),
+  slug: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z0-9-]+$/, "lowercase letters, numbers, and hyphens only"),
   title: z.string().min(1).max(200),
   tagline: z.string().max(300).default(""),
   description: z.string().max(20000).default(""),
@@ -118,7 +150,7 @@ const projectInput = z.object({
       z.object({
         label: z.string().min(1).max(60),
         value: z.string().min(1).max(20),
-      })
+      }),
     )
     .max(6)
     .default([]),
@@ -128,7 +160,7 @@ const projectInput = z.object({
         label: z.string().min(1).max(80),
         url: z.string().url().max(2000),
         kind: z.enum(["demo", "writeup", "repo", "other"]).default("other"),
-      })
+      }),
     )
     .max(10)
     .default([]),
@@ -199,7 +231,7 @@ export const saveProject = createServerFn({ method: "POST" })
           url: l.url,
           kind: l.kind,
           order_index: i,
-        }))
+        })),
       );
       if (error) throw new Error(error.message);
     }

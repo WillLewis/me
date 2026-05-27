@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listProjects, deleteProject } from "@/lib/projects.functions";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminList,
@@ -25,7 +26,7 @@ function AdminList() {
       qc.invalidateQueries({ queryKey: ["admin", "projects"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getErrorMessage(e, "Delete failed")),
   });
 
   return (
@@ -33,9 +34,14 @@ function AdminList() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="font-serif text-4xl">Projects</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Add, edit, or remove portfolio entries.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add, edit, or remove portfolio entries.
+          </p>
         </div>
-        <Link to="/admin/new" className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">
+        <Link
+          to="/admin/new"
+          className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground"
+        >
           + New project
         </Link>
       </div>
@@ -56,7 +62,9 @@ function AdminList() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-serif text-lg">{p.title}</div>
-                  <div className="truncate text-xs text-muted-foreground">/{p.slug} · order {p.order_index}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    /{p.slug} · order {p.order_index}
+                  </div>
                 </div>
                 <Link
                   to="/admin/$id/edit"

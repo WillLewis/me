@@ -13,7 +13,8 @@ function EditPage() {
   const list = useServerFn(listProjects);
   const { data, isLoading } = useQuery({ queryKey: ["admin", "projects"], queryFn: () => list() });
 
-  if (isLoading) return <div className="mx-auto max-w-3xl px-6 py-10 text-muted-foreground">Loading…</div>;
+  if (isLoading)
+    return <div className="mx-auto max-w-3xl px-6 py-10 text-muted-foreground">Loading…</div>;
   const project = data?.find((p) => p.id === id);
   if (!project) throw notFound();
   return <ProjectForm initial={project} />;

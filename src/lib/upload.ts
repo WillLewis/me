@@ -9,7 +9,9 @@ export function detectMediaType(file: File): "gif" | "mp4" | "image" {
   return "image";
 }
 
-export async function uploadProjectMedia(file: File): Promise<{ url: string; type: "gif" | "mp4" | "image" }> {
+export async function uploadProjectMedia(
+  file: File,
+): Promise<{ url: string; type: "gif" | "mp4" | "image" }> {
   const ext = file.name.split(".").pop() || "bin";
   const path = `uploads/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {

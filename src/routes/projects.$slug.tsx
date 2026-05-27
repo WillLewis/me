@@ -2,6 +2,9 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { getProjectBySlug } from "@/lib/projects.functions";
+import { getDisplayProject } from "@/lib/placeholder-projects";
+import { pageMeta } from "@/lib/metadata";
+import { siteConfig } from "@/lib/site-config";
 
 const projectQO = (slug: string) =>
   queryOptions({
@@ -16,22 +19,21 @@ export const Route = createFileRoute("/projects/$slug")({
     return data;
   },
   head: ({ loaderData }) => {
-    const p = loaderData;
+    const p = loaderData ? getDisplayProject(loaderData) : loaderData;
     if (!p) return { meta: [{ title: "Project not found" }] };
-    return {
-      meta: [
-        { title: `${p.title} — AI/ML Portfolio` },
-        { name: "description", content: p.tagline || p.title },
-        { property: "og:title", content: p.title },
-        { property: "og:description", content: p.tagline || p.title },
-        ...(p.media_url && p.media_type !== "mp4" ? [{ property: "og:image", content: p.media_url }] : []),
-      ],
-    };
+    return pageMeta({
+      title: `${p.title} — ${siteConfig.title}`,
+      description: p.tagline || p.title,
+      path: `/projects/${p.slug}`,
+      image: "/og-image.png",
+    });
   },
   notFoundComponent: () => (
     <div className="mx-auto max-w-2xl px-6 py-24 text-center">
       <h1 className="font-serif text-4xl">Project not found</h1>
-      <Link to="/" className="mt-6 inline-block text-primary underline">Back to portfolio</Link>
+      <Link to="/" className="mt-6 inline-block text-primary underline">
+        Back to portfolio
+      </Link>
     </div>
   ),
   errorComponent: ({ error }) => (
@@ -46,11 +48,14 @@ export const Route = createFileRoute("/projects/$slug")({
 function ProjectPage() {
   const { slug } = Route.useParams();
   const { data } = useSuspenseQuery(projectQO(slug));
-  const p = data!;
+  const p = getDisplayProject(data!);
 
   return (
     <article className="mx-auto max-w-3xl px-6 py-10 md:py-16">
-      <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         ← All projects
       </Link>
 
@@ -60,7 +65,10 @@ function ProjectPage() {
         {p.tags.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-1.5">
             {p.tags.map((t) => (
-              <span key={t} className="rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
+              <span
+                key={t}
+                className="rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground"
+              >
                 {t}
               </span>
             ))}
@@ -71,7 +79,16 @@ function ProjectPage() {
       {p.media_url && (
         <div className="mt-8 overflow-hidden rounded-2xl border bg-muted">
           {p.media_type === "mp4" ? (
-            <video src={p.media_url} poster={p.poster_url ?? undefined} controls autoPlay muted loop playsInline className="w-full" />
+            <video
+              src={p.media_url}
+              poster={p.poster_url ?? undefined}
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full"
+            />
           ) : (
             <img src={p.media_url} alt={p.title} className="w-full" />
           )}
@@ -80,7 +97,9 @@ function ProjectPage() {
 
       {p.metrics.length > 0 && (
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Outcomes</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            {siteConfig.placeholderContent ? "Placeholder fields" : "Outcomes"}
+          </p>
           <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-3">
             {p.metrics.map((m) => {
               const v = m.value.trim();
@@ -89,8 +108,12 @@ function ProjectPage() {
               const tone = isPos ? "text-primary" : isNeg ? "text-secondary" : "text-foreground";
               return (
                 <div key={m.label}>
-                  <dt className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{m.label}</dt>
-                  <dd className={`mt-1.5 font-serif text-3xl leading-none tabular-nums ${tone}`}>{m.value}</dd>
+                  <dt className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                    {m.label}
+                  </dt>
+                  <dd className={`mt-1.5 font-serif text-3xl leading-none tabular-nums ${tone}`}>
+                    {m.value}
+                  </dd>
                 </div>
               );
             })}

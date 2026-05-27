@@ -2,8 +2,11 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getErrorMessage } from "@/lib/error-message";
+import { noIndexMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/reset-password")({
+  head: () => noIndexMeta("Reset password", "/reset-password", "Reset portfolio admin password."),
   component: ResetPasswordPage,
 });
 
@@ -16,7 +19,9 @@ function ResetPasswordPage() {
   useEffect(() => {
     // Supabase parses the recovery token from the URL hash automatically
     // and emits a PASSWORD_RECOVERY event.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setReady(true);
     });
     // Also check existing session in case event already fired
@@ -34,8 +39,8 @@ function ResetPasswordPage() {
       if (error) throw error;
       toast.success("Password updated");
       navigate({ to: "/admin" });
-    } catch (err: any) {
-      toast.error(err.message ?? "Failed to update password");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to update password"));
     } finally {
       setBusy(false);
     }
@@ -43,7 +48,9 @@ function ResetPasswordPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">← Sign in</Link>
+      <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground">
+        ← Sign in
+      </Link>
       <h1 className="mt-6 font-serif text-4xl">Set a new password</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {ready
@@ -57,7 +64,7 @@ function ResetPasswordPage() {
           <input
             type="password"
             required
-            minLength={6}
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={!ready}

@@ -5,9 +5,12 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { bootstrapAdmin, getSetupStatus } from "@/lib/setup.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { siteConfig } from "@/lib/site-config";
+import { getErrorMessage } from "@/lib/error-message";
+import { noIndexMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/setup")({
-  head: () => ({ meta: [{ title: "Admin setup" }, { name: "robots", content: "noindex" }] }),
+  head: () => noIndexMeta("Admin setup", "/setup", "One-time portfolio admin setup."),
   component: SetupPage,
 });
 
@@ -15,7 +18,12 @@ function SetupPage() {
   const navigate = useNavigate();
   const statusFn = useServerFn(getSetupStatus);
   const bootstrapFn = useServerFn(bootstrapAdmin);
-  const { data: status, isLoading } = useQuery({
+  const {
+    data: status,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["setup-status"],
     queryFn: () => statusFn(),
   });
@@ -34,8 +42,8 @@ function SetupPage() {
       if (error) throw error;
       toast.success("Admin account created. Welcome.");
       navigate({ to: "/admin" });
-    } catch (err: any) {
-      toast.error(err?.message ?? "Setup failed");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Setup failed"));
     } finally {
       setBusy(false);
     }
@@ -43,6 +51,28 @@ function SetupPage() {
 
   if (isLoading) {
     return <div className="mx-auto max-w-md px-6 py-20 text-muted-foreground">Checking…</div>;
+  }
+
+  if (isError) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+        <h1 className="font-serif text-3xl">Setup unavailable</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {getErrorMessage(error, "Setup status could not be checked.")}
+        </p>
+        <div className="mt-6 flex gap-3">
+          <Link to="/" className="rounded-full border px-4 py-2 text-sm">
+            {siteConfig.shortTitle}
+          </Link>
+          <Link
+            to="/login"
+            className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground"
+          >
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (status?.hasAdmin) {
@@ -53,8 +83,15 @@ function SetupPage() {
           An admin account exists for this portfolio. This one-time setup page is now locked.
         </p>
         <div className="mt-6 flex gap-3">
-          <Link to="/login" className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">Sign in</Link>
-          <Link to="/" className="rounded-full border px-4 py-2 text-sm">Portfolio</Link>
+          <Link
+            to="/login"
+            className="rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground"
+          >
+            Sign in
+          </Link>
+          <Link to="/" className="rounded-full border px-4 py-2 text-sm">
+            {siteConfig.shortTitle}
+          </Link>
         </div>
       </div>
     );
@@ -62,11 +99,16 @@ function SetupPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Portfolio</Link>
+      <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+        ← {siteConfig.shortTitle}
+      </Link>
       <h1 className="mt-6 font-serif text-4xl">Claim your admin account</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         One-time setup. After this, the page locks and you'll sign in from{" "}
-        <Link to="/login" className="underline">/login</Link>.
+        <Link to="/login" className="underline">
+          /login
+        </Link>
+        .
       </p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">

@@ -3,10 +3,45 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { saveProject, type Project } from "@/lib/projects.functions";
+import { getErrorMessage } from "@/lib/error-message";
+import {
+  saveProject,
+  type Project,
+  type ProjectLink,
+  type ProjectMetric,
+} from "@/lib/projects.functions";
 import { uploadProjectMedia } from "@/lib/upload";
 
-type LinkRow = { label: string; url: string; kind: "demo" | "writeup" | "repo" | "other" };
+type ProjectMediaType = Project["media_type"];
+type LinkRow = Pick<ProjectLink, "label" | "url" | "kind">;
+type LinkKind = LinkRow["kind"];
+type ProjectFormPayload = {
+  id?: string;
+  slug: string;
+  title: string;
+  tagline: string;
+  description: string;
+  tags: string[];
+  media_url: string | null;
+  media_type: ProjectMediaType;
+  poster_url: string | null;
+  order_index: number;
+  links: LinkRow[];
+  metrics: ProjectMetric[];
+};
+
+const mediaTypes = new Set<ProjectMediaType>(["gif", "mp4", "image"]);
+const linkKinds = new Set<LinkKind>(["demo", "writeup", "repo", "other"]);
+
+function parseMediaType(value: string): ProjectMediaType {
+  const mediaType = value as ProjectMediaType;
+  return mediaTypes.has(mediaType) ? mediaType : "image";
+}
+
+function parseLinkKind(value: string): LinkKind {
+  const linkKind = value as LinkKind;
+  return linkKinds.has(linkKind) ? linkKind : "other";
+}
 
 export function ProjectForm({ initial }: { initial?: Project }) {
   const navigate = useNavigate();
@@ -20,24 +55,24 @@ export function ProjectForm({ initial }: { initial?: Project }) {
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [orderIndex, setOrderIndex] = useState(initial?.order_index ?? 0);
   const [mediaUrl, setMediaUrl] = useState<string | null>(initial?.media_url ?? null);
-  const [mediaType, setMediaType] = useState<"gif" | "mp4" | "image">(initial?.media_type ?? "image");
+  const [mediaType, setMediaType] = useState<ProjectMediaType>(initial?.media_type ?? "image");
   const [posterUrl, setPosterUrl] = useState<string | null>(initial?.poster_url ?? null);
   const [links, setLinks] = useState<LinkRow[]>(
-    initial?.links.map((l) => ({ label: l.label, url: l.url, kind: l.kind })) ?? []
+    initial?.links.map((l) => ({ label: l.label, url: l.url, kind: l.kind })) ?? [],
   );
   const [metrics, setMetrics] = useState<{ label: string; value: string }[]>(
-    initial?.metrics ?? []
+    initial?.metrics ?? [],
   );
   const [uploading, setUploading] = useState(false);
 
   const m = useMutation({
-    mutationFn: (payload: any) => save({ data: payload }),
+    mutationFn: (payload: ProjectFormPayload) => save({ data: payload }),
     onSuccess: () => {
       toast.success("Saved");
       qc.invalidateQueries();
       navigate({ to: "/admin" });
     },
-    onError: (e: any) => toast.error(e.message ?? "Save failed"),
+    onError: (e: unknown) => toast.error(getErrorMessage(e, "Save failed")),
   });
 
   const handleUpload = async (file: File, kind: "media" | "poster") => {
@@ -51,8 +86,8 @@ export function ProjectForm({ initial }: { initial?: Project }) {
         setPosterUrl(r.url);
       }
       toast.success("Uploaded");
-    } catch (e: any) {
-      toast.error(e.message ?? "Upload failed");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "Upload failed"));
     } finally {
       setUploading(false);
     }
@@ -66,7 +101,10 @@ export function ProjectForm({ initial }: { initial?: Project }) {
       title: title.trim(),
       tagline,
       description,
-      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+      tags: tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
       media_url: mediaUrl,
       media_type: mediaType,
       poster_url: posterUrl,
@@ -81,7 +119,13 @@ export function ProjectForm({ initial }: { initial?: Project }) {
       <h1 className="font-serif text-4xl">{initial ? "Edit project" : "New project"}</h1>
 
       <Field label="Title">
-        <input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} className={inputCls} />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          maxLength={200}
+          className={inputCls}
+        />
       </Field>
 
       <Field label="Slug" hint="lowercase, hyphens only — used in the URL">
@@ -96,11 +140,21 @@ export function ProjectForm({ initial }: { initial?: Project }) {
       </Field>
 
       <Field label="Tagline">
-        <input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={300} className={inputCls} />
+        <input
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
+          maxLength={300}
+          className={inputCls}
+        />
       </Field>
 
       <Field label="Tags" hint="comma-separated">
-        <input value={tags} onChange={(e) => setTags(e.target.value)} className={inputCls} placeholder="LLM, RAG, Agents" />
+        <input
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          className={inputCls}
+          placeholder="LLM, RAG, Agents"
+        />
       </Field>
 
       <Field label="Order" hint="lower = earlier on the grid">
@@ -133,7 +187,7 @@ export function ProjectForm({ initial }: { initial?: Project }) {
         )}
         <select
           value={mediaType}
-          onChange={(e) => setMediaType(e.target.value as any)}
+          onChange={(e) => setMediaType(parseMediaType(e.target.value))}
           className={`mt-3 ${inputCls}`}
         >
           <option value="image">Image (jpg/png)</option>
@@ -143,7 +197,13 @@ export function ProjectForm({ initial }: { initial?: Project }) {
       </Field>
 
       {(mediaType === "mp4" || mediaType === "gif") && (
-        <Field label={mediaType === "gif" ? "Poster image (optional, shown until hover)" : "Poster image (optional, shown before video plays)"}>
+        <Field
+          label={
+            mediaType === "gif"
+              ? "Poster image (optional, shown until hover)"
+              : "Poster image (optional, shown before video plays)"
+          }
+        >
           <input
             type="file"
             accept="image/*"
@@ -169,7 +229,10 @@ export function ProjectForm({ initial }: { initial?: Project }) {
 
       <div>
         <div className="mb-2 flex items-end justify-between">
-          <label className="text-sm font-medium">Outcome metrics <span className="ml-2 text-xs text-muted-foreground">first 3 show on the card</span></label>
+          <label className="text-sm font-medium">
+            Outcome metrics{" "}
+            <span className="ml-2 text-xs text-muted-foreground">first 3 show on the card</span>
+          </label>
           <button
             type="button"
             onClick={() => setMetrics([...metrics, { label: "", value: "" }])}
@@ -184,14 +247,18 @@ export function ProjectForm({ initial }: { initial?: Project }) {
             <div key={i} className="grid grid-cols-12 gap-2">
               <input
                 value={mm.label}
-                onChange={(e) => setMetrics(metrics.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                onChange={(e) =>
+                  setMetrics(metrics.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+                }
                 placeholder="Label (e.g. P95 latency)"
                 maxLength={60}
                 className={`${inputCls} col-span-7`}
               />
               <input
                 value={mm.value}
-                onChange={(e) => setMetrics(metrics.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))}
+                onChange={(e) =>
+                  setMetrics(metrics.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))
+                }
                 placeholder="Value (e.g. -38%)"
                 maxLength={20}
                 className={`${inputCls} col-span-4`}
@@ -224,19 +291,29 @@ export function ProjectForm({ initial }: { initial?: Project }) {
             <div key={i} className="grid grid-cols-12 gap-2">
               <input
                 value={l.label}
-                onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                onChange={(e) =>
+                  setLinks(links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+                }
                 placeholder="Label"
                 className={`${inputCls} col-span-3`}
               />
               <input
                 value={l.url}
-                onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
+                onChange={(e) =>
+                  setLinks(links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))
+                }
                 placeholder="https://…"
                 className={`${inputCls} col-span-6`}
               />
               <select
                 value={l.kind}
-                onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, kind: e.target.value as any } : x)))}
+                onChange={(e) =>
+                  setLinks(
+                    links.map((x, j) =>
+                      j === i ? { ...x, kind: parseLinkKind(e.target.value) } : x,
+                    ),
+                  )
+                }
                 className={`${inputCls} col-span-2`}
               >
                 <option value="demo">demo</option>
@@ -264,7 +341,11 @@ export function ProjectForm({ initial }: { initial?: Project }) {
         >
           {m.isPending ? "Saving…" : "Save project"}
         </button>
-        <button type="button" onClick={() => navigate({ to: "/admin" })} className="rounded-full border px-5 py-2.5 text-sm">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/admin" })}
+          className="rounded-full border px-5 py-2.5 text-sm"
+        >
           Cancel
         </button>
         {uploading && <span className="text-sm text-muted-foreground">Uploading…</span>}
@@ -273,10 +354,17 @@ export function ProjectForm({ initial }: { initial?: Project }) {
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border bg-card px-3 py-2 outline-none focus:border-primary";
+const inputCls = "w-full rounded-lg border bg-card px-3 py-2 outline-none focus:border-primary";
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="text-sm font-medium">{label}</span>
