@@ -9,6 +9,29 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
+const RUNTIME_ENV_KEYS = [
+  "SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_SECRET_KEY",
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+] as const;
+
+function populateProcessEnvFromCloudflare(env: unknown) {
+  if (!env || typeof env !== "object" || typeof process === "undefined" || !process.env) {
+    return;
+  }
+
+  const bindings = env as Record<string, unknown>;
+  for (const key of RUNTIME_ENV_KEYS) {
+    const value = bindings[key];
+    if (typeof value === "string" && value && !process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
+
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
@@ -69,6 +92,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      populateProcessEnvFromCloudflare(env);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
