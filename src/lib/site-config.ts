@@ -1,6 +1,6 @@
 export const siteConfig = {
   placeholderContent: true,
-  siteUrl: "https://gif-show-platform.lovable.app",
+  siteUrl: "https://wxl3.com",
   title: "AI/ML Product Portfolio",
   shortTitle: "Portfolio",
   role: "AI / ML Product Manager",

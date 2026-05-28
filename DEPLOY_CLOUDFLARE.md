@@ -46,11 +46,43 @@ Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Never expose it as a `VITE_` varia
 6. Add the runtime Supabase variables/secrets.
 7. Deploy.
 
-## After First Deploy
+## Custom Domain
 
-Update `siteConfig.siteUrl` in `src/lib/site-config.ts` to the final Cloudflare production URL or custom domain, then redeploy. This controls canonical URLs, Open Graph URLs, `robots.txt`, and `sitemap.xml`.
+The production domain is `https://wxl3.com`.
 
-If you use a custom domain, configure it in Cloudflare after the first successful deploy and then use that domain as `siteConfig.siteUrl`.
+After the Worker deploys successfully:
+
+1. Add `wxl3.com` to Cloudflare as a website/zone.
+2. Copy the Cloudflare nameservers assigned to the zone.
+3. In GoDaddy, replace the domain's nameservers with the Cloudflare nameservers.
+4. In Cloudflare, add `wxl3.com` as a Worker custom domain.
+5. Optional: also add `www.wxl3.com` and redirect it to `https://wxl3.com`.
+
+`siteConfig.siteUrl`, `robots.txt`, and `sitemap.xml` already use `https://wxl3.com`.
+
+## GoDaddy DNS Setup
+
+Do not add semicolon-separated DNS records in GoDaddy, and do not create manual A/CNAME records in GoDaddy for the Worker. For a Cloudflare Worker custom domain, delegate DNS to Cloudflare by changing the domain's nameservers at GoDaddy.
+
+Before changing nameservers, copy any existing email-related records from GoDaddy into the Cloudflare DNS zone:
+
+- MX records
+- SPF TXT record
+- DKIM TXT/CNAME records
+- DMARC TXT record
+- Any verification TXT records
+
+Then update GoDaddy:
+
+1. Sign in to GoDaddy.
+2. Open the Domain Portfolio.
+3. Select `wxl3.com`.
+4. Go to DNS > Nameservers.
+5. Choose the option to use your own/custom nameservers.
+6. Paste the two Cloudflare nameservers assigned to `wxl3.com`.
+7. Save and approve any verification prompts.
+
+After propagation, DNS records for `wxl3.com` are managed in Cloudflare, not GoDaddy.
 
 ## Notes
 

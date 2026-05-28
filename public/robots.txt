@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://gif-show-platform.lovable.app/sitemap.xml
+Sitemap: https://wxl3.com/sitemap.xml
