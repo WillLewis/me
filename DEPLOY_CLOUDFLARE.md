@@ -33,13 +33,15 @@ Use the same Supabase project URL for `SUPABASE_URL` and `VITE_SUPABASE_URL`.
 Use the same publishable key for `SUPABASE_PUBLISHABLE_KEY` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Never expose it as a `VITE_` variable.
 
-Cloudflare has separate places for build-time variables and runtime Worker variables. The Git build/deploy wizard variables are not enough for `/setup`; add the runtime values under the deployed Worker:
+Cloudflare has separate places for build-time variables and runtime Worker variables. The Git build/deploy wizard variables are not enough for `/setup`; do not put the server-only Supabase values only under Settings > Build. `/setup` runs inside the deployed Worker at request time, so add the runtime values under the deployed Worker:
 
 Workers & Pages > me > Settings > Variables and Secrets
 
 Add them to the Production environment. Use raw values with no quotes.
 
-`wrangler.jsonc` sets `keep_vars: true` so `npx wrangler deploy` preserves runtime variables configured in the Cloudflare dashboard.
+`SUPABASE_SERVICE_ROLE_KEY` can use Supabase's newer `sb_secret_...` key. Keep the variable name as `SUPABASE_SERVICE_ROLE_KEY` because that is what the app reads.
+
+`wrangler.jsonc` sets `keep_vars: true` so `npx wrangler deploy` preserves runtime variables configured in the Cloudflare dashboard. It also enables `nodejs_compat_populate_process_env` so the runtime values are available to this TanStack Start app through `process.env`.
 
 ## Cloudflare Dashboard Setup
 
