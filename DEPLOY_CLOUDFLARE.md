@@ -33,6 +33,14 @@ Use the same Supabase project URL for `SUPABASE_URL` and `VITE_SUPABASE_URL`.
 Use the same publishable key for `SUPABASE_PUBLISHABLE_KEY` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Never expose it as a `VITE_` variable.
 
+Cloudflare has separate places for build-time variables and runtime Worker variables. The Git build/deploy wizard variables are not enough for `/setup`; add the runtime values under the deployed Worker:
+
+Workers & Pages > me > Settings > Variables and Secrets
+
+Add them to the Production environment. Use raw values with no quotes.
+
+`wrangler.jsonc` sets `keep_vars: true` so `npx wrangler deploy` preserves runtime variables configured in the Cloudflare dashboard.
+
 ## Cloudflare Dashboard Setup
 
 1. Push this repo to GitHub.
