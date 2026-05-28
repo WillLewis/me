@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/use-session";
 import { siteConfig } from "@/lib/site-config";
 import { getErrorMessage } from "@/lib/error-message";
-import { noIndexMeta } from "@/lib/metadata";
+import { absoluteUrl, noIndexMeta } from "@/lib/metadata";
 
 export const Route = createFileRoute("/login")({
   head: () => noIndexMeta("Sign in", "/login", "Admin sign-in for the portfolio CMS."),
@@ -37,7 +37,7 @@ function LoginPage() {
         navigate({ to: "/admin" });
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: absoluteUrl("/reset-password"),
         });
         if (error) throw error;
         toast.success("If that email exists, a reset link is on its way.");
