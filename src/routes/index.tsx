@@ -121,7 +121,7 @@ function IndexPage() {
                   label="Tenure"
                   value="8+"
                   unit="years"
-                  caption="PM since 2018 · ML focus since 2021"
+                  caption="PM since 2018 · ML focus since 2017"
                 />
                 <Stat
                   label="Workflow scale"
