@@ -156,7 +156,7 @@ function IndexPage() {
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
               {isPlaceholder
                 ? "Placeholder work · content not final"
-                : "Selected work · 2022 — 2026"}
+                : "Selected work · 2017 — 2026"}
             </p>
             <h2 className="mt-3 font-serif text-3xl leading-tight md:text-4xl">
               {isPlaceholder ? (
@@ -362,9 +362,7 @@ function projectCountLabel(count: number) {
 
 function ProjectCard({ p, index }: { p: Project; index: number }) {
   const [hover, setHover] = useState(false);
-  const cornerLabel = p.tagline
-    ? p.tagline.toUpperCase()
-    : `PROJECT ${String(index + 1).padStart(2, "0")}`;
+  const cornerLabel = getProjectCornerLabel(p, index);
 
   return (
     <Link
@@ -416,8 +414,8 @@ function ProjectCard({ p, index }: { p: Project; index: number }) {
         ) : null}
 
         {/* Corner label */}
-        <div className="absolute left-3 top-3 text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 mix-blend-multiply">
-          {cornerLabel.slice(0, 36)}
+        <div className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] text-[10px] uppercase tracking-[0.14em] text-muted-foreground/80 mix-blend-multiply">
+          {cornerLabel}
         </div>
 
         {/* Bottom-left tag chips */}
@@ -441,9 +439,8 @@ function ProjectCard({ p, index }: { p: Project; index: number }) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
           <span>{p.tags[0] ?? "Project"}</span>
-          <span>{siteConfig.placeholderContent ? "Draft slot" : "2024 — 2026"}</span>
         </div>
         <h3 className="mt-3 font-serif text-2xl leading-tight">{p.title}</h3>
         {p.tagline && (
@@ -482,4 +479,20 @@ function ProjectCard({ p, index }: { p: Project; index: number }) {
       </div>
     </Link>
   );
+}
+
+function getProjectCornerLabel(project: Project, index: number) {
+  const labels: Record<string, string> = {
+    "capital-one-neurosymbolic-multi-agent-operations-review":
+      "Neurosymbolic Multi-Agent Review System",
+    "hpe-enterprise-rag-knowledge-search-platform": "Enterprise RAG Hybrid Knowledge Search",
+    "stanford-medicine-automated-medical-content-tagging": "Content Tagging Active Learning System",
+    "reup-computer-vision-fraud-detection-marketplace-trust":
+      "Computer Vision Review Routing Workflow",
+    "project-atlas-agentic-fraud-eval-safeguards-lab": "Adversarial Agent Fraud Red/Blue Team",
+    "voice-agent-prompt-lab-insurance-fnol-eval-harness": "Voice Agent Prompt Lab",
+    "regulated-agent-launch-kit-ai-launch-readiness": "Enterprise Agent Deployment-Readiness Kit",
+  };
+
+  return labels[project.slug] ?? `Project ${String(index + 1).padStart(2, "0")}`;
 }

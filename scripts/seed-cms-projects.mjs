@@ -56,7 +56,7 @@ const projects = [
       "A neurosymbolic multi-agent review system for high-volume operational workflows, separating evidence assembly, AI interpretation, deterministic controls, and human review.",
     tags: ["Agents", "LangGraph", "Weights & Biases"],
     metrics: [
-      { label: "Review time", value: "~20m -> ~2m" },
+      { label: "Review time", value: "-90%" },
       { label: "Workflow scale", value: "~1M / mo" },
       { label: "Use cases", value: "4 rails" },
     ],
@@ -72,7 +72,7 @@ const projects = [
     metrics: [
       { label: "Guide traffic", value: "-80%" },
       { label: "Clicked dwell", value: "+20%" },
-      { label: "Beta/support", value: "98% / ~30%" },
+      { label: "Support tickets", value: "-30%" },
     ],
   },
   {
@@ -84,7 +84,7 @@ const projects = [
       "An automated medical content-tagging system combining structured metadata signals with semantic understanding from a fine-tuned biomedical language model.",
     tags: ["XGBoost", "Active Learning", "NLP"],
     metrics: [
-      { label: "Model quality", value: "85% -> 92%" },
+      { label: "Model quality", value: "+7%" },
       { label: "Tagging time", value: "-60%" },
       { label: "Annual savings", value: "~$400K" },
     ],
@@ -99,7 +99,7 @@ const projects = [
     tags: ["Computer Vision", "CNN"],
     metrics: [
       { label: "Routing recall", value: "83%" },
-      { label: "Backlog", value: "~4h -> <1h" },
+      { label: "Backlog", value: "-75%" },
       { label: "Workflows", value: "-40%" },
     ],
   },
@@ -127,8 +127,8 @@ const projects = [
     tags: ["Voice AI", "Evals", "Codex"],
     metrics: [
       { label: "Scenarios", value: "6" },
-      { label: "Assertions", value: "72" },
-      { label: "Baseline", value: "No key req." },
+      { label: "Eval gate", value: "114/114" },
+      { label: "Regressions caught", value: "5" },
     ],
   },
   {
@@ -140,9 +140,9 @@ const projects = [
       "A deployment-readiness kit that turns workflow maps, traces, evals, regressions, approval gates, and redacted evidence packs into launch/no-launch recommendations.",
     tags: ["Agents", "Evals", "LangGraph", "Braintrust", "Claude Code"],
     metrics: [
-      { label: "Full dataset", value: "10/10 vs 7/10" },
+      { label: "Recall @ limit", value: "4x" },
+      { label: "Synthetic loss", value: "-62%" },
       { label: "Runtime eval", value: "10/10" },
-      { label: "Adversarial", value: "6/6 vs 3/6" },
     ],
   },
 ];
@@ -177,7 +177,7 @@ function readDescription(doc) {
     writeupStart >= 0
       ? markdown.slice(writeupStart).replace(/^## Write-up\s*/m, "")
       : markdown.slice(summaryStart >= 0 ? summaryStart : 0);
-  return lightPolish(body.trim().replace(/^### /gm, "## "));
+  return addDetailNotes(doc, lightPolish(body.trim().replace(/^### /gm, "## ")));
 }
 
 function lightPolish(markdown) {
@@ -185,6 +185,20 @@ function lightPolish(markdown) {
     (text, [pattern, replacement]) => text.replace(pattern, replacement),
     markdown,
   );
+}
+
+function addDetailNotes(doc, markdown) {
+  if (doc !== "07_regulated_agent_launch_kit_ai_launch_readiness.md") return markdown;
+
+  const detail = `## Metric detail
+
+**Recall @ limit:** judge-derived recall improved from 12.5% to 50.0%.
+
+**Synthetic loss:** synthetic loss allowed fell from $2.22M to $850.5K.
+
+`;
+
+  return markdown.replace("## Problem", `${detail}## Problem`);
 }
 
 const records = projects.map((project, index) => ({
