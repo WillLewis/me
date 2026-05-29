@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { listProjects, type Project } from "@/lib/projects.functions";
-import { getDisplayProject } from "@/lib/placeholder-projects";
 import { pageMeta } from "@/lib/metadata";
 import { getContactRows, siteConfig } from "@/lib/site-config";
 
@@ -18,11 +17,7 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexPage() {
-  const { data: rawProjects } = useSuspenseQuery(projectsQO);
-  const projects = useMemo(
-    () => rawProjects.map((project, index) => getDisplayProject(project, index)),
-    [rawProjects],
-  );
+  const { data: projects } = useSuspenseQuery(projectsQO);
   const [active, setActive] = useState<string | null>(null);
   const contactRows = getContactRows();
   const isPlaceholder = siteConfig.placeholderContent;
@@ -100,9 +95,11 @@ function IndexPage() {
           ) : (
             <p className="max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
               I run zero-to-one and scale phases for{" "}
-              <em className="not-italic text-foreground">LLM, retrieval, and agent</em> products —
-              owning eval design, model choice, latency-cost tradeoffs, and the boring infra debates
-              that decide whether a feature actually lands.
+              <em className="not-italic text-foreground">
+                agentic AI, LLM/RAG, and ML decisioning
+              </em>{" "}
+              products — owning eval design, model choice, fraud-operations constraints, and the
+              regulated workflow details that decide whether a feature actually lands.
             </p>
           )}
 
@@ -122,16 +119,21 @@ function IndexPage() {
               <>
                 <Stat
                   label="Tenure"
-                  value="8"
+                  value="8+"
                   unit="years"
                   caption="PM since 2018 · ML focus since 2021"
                 />
-                <Stat label="Surfaces shipped" value="24" caption="B2B, devtools, consumer AI" />
                 <Stat
-                  label="Scale touched"
-                  value="3.1"
-                  unit="b req / mo"
-                  caption="Across inference + retrieval"
+                  label="Workflow scale"
+                  value="1M"
+                  unit="/ mo"
+                  caption="Fraud + operations reviews"
+                />
+                <Stat
+                  label="Product scope"
+                  value="AI/ML"
+                  small
+                  caption="Agents, RAG, evals, and vision"
                 />
                 <Stat
                   label="Open to"
@@ -164,7 +166,9 @@ function IndexPage() {
                 </>
               ) : (
                 <>
-                  {filtered.length === projects.length ? "Selected" : "Filtered"} projects,
+                  {filtered.length === projects.length
+                    ? `${projectCountLabel(projects.length)} projects,`
+                    : "Filtered projects,"}
                   <em className="text-primary"> picked for what they taught me.</em>
                 </>
               )}
@@ -220,14 +224,15 @@ function IndexPage() {
           ) : (
             <>
               <p className="mt-4 leading-relaxed">
-                <strong className="text-foreground">{siteConfig.aboutRole}</strong> based in{" "}
-                {siteConfig.aboutLocation}. Previously founding PM on the agent platform at an LLM
-                lab, and earlier search PM at a developer tools company.
+                <strong className="text-foreground">Will Lewis</strong> is an AI/ML product manager
+                based in {siteConfig.aboutLocation}. Currently Product Manager, AI at Capital One;
+                previously Product Manager at WebMocha and Head of Product at REUP.
               </p>
               <p className="mt-3 leading-relaxed text-muted-foreground">
-                I work best on teams that take eval seriously and treat unit economics as a
-                first-class product surface. I write working docs, not vision decks. Available for
-                senior PM and Group PM roles starting{" "}
+                Wharton MBA, University of Pennsylvania economics, and hands-on product work across
+                regulated fintech, enterprise AI, and marketplace ML. I work best on teams that take
+                evals seriously and treat unit economics as a first-class product surface. Available
+                for senior PM and Group PM roles; timing{" "}
                 <em className="not-italic text-foreground">{siteConfig.aboutAvailability}</em>.
               </p>
             </>
@@ -339,6 +344,20 @@ function FilterChip({
       )}
     </button>
   );
+}
+
+function projectCountLabel(count: number) {
+  const words: Record<number, string> = {
+    1: "One",
+    2: "Two",
+    3: "Three",
+    4: "Four",
+    5: "Five",
+    6: "Six",
+    7: "Seven",
+    8: "Eight",
+  };
+  return words[count] ?? String(count);
 }
 
 function ProjectCard({ p, index }: { p: Project; index: number }) {

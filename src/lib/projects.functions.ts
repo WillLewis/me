@@ -141,9 +141,9 @@ const projectInput = z.object({
   tagline: z.string().max(300).default(""),
   description: z.string().max(20000).default(""),
   tags: z.array(z.string().min(1).max(40)).max(20).default([]),
-  media_url: z.string().url().nullable(),
+  media_url: z.union([z.string().url(), z.string().regex(/^\/(?!\/)\S*$/)]).nullable(),
   media_type: z.enum(["gif", "mp4", "image"]),
-  poster_url: z.string().url().nullable(),
+  poster_url: z.union([z.string().url(), z.string().regex(/^\/(?!\/)\S*$/)]).nullable(),
   order_index: z.number().int().min(0).max(10000).default(0),
   metrics: z
     .array(

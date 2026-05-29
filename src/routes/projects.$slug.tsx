@@ -2,7 +2,6 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { getProjectBySlug } from "@/lib/projects.functions";
-import { getDisplayProject } from "@/lib/placeholder-projects";
 import { pageMeta } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site-config";
 
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/projects/$slug")({
     return data;
   },
   head: ({ loaderData }) => {
-    const p = loaderData ? getDisplayProject(loaderData) : loaderData;
+    const p = loaderData;
     if (!p) return { meta: [{ title: "Project not found" }] };
     return pageMeta({
       title: `${p.title} — ${siteConfig.title}`,
@@ -48,7 +47,7 @@ export const Route = createFileRoute("/projects/$slug")({
 function ProjectPage() {
   const { slug } = Route.useParams();
   const { data } = useSuspenseQuery(projectQO(slug));
-  const p = getDisplayProject(data!);
+  const p = data!;
 
   return (
     <article className="mx-auto max-w-3xl px-6 py-10 md:py-16">
