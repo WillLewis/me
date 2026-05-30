@@ -130,6 +130,7 @@ const projects = [
       { label: "Eval gate", value: "114/114" },
       { label: "Regressions caught", value: "5" },
     ],
+    links: [{ label: "Live demo", url: "https://wxl3.com/voice", kind: "demo" }],
   },
   {
     doc: "07_regulated_agent_launch_kit_ai_launch_readiness.md",
@@ -212,16 +213,20 @@ const records = projects.map((project, index) => ({
   media_type: "image",
   poster_url: null,
   order_index: index,
+  links: project.links ?? [],
 }));
+
+const projectRecords = records.map(({ links, ...project }) => project);
 
 if (!apply) {
   console.log("Dry run: pass --apply to write these CMS project records.");
   console.table(
-    records.map(({ slug, title, tags, metrics, media_url }) => ({
+    records.map(({ slug, title, tags, metrics, media_url, links }) => ({
       slug,
       title,
       tags: tags.join(", "),
       metrics: metrics.length,
+      links: links.length,
       media_url,
     })),
   );
@@ -237,7 +242,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 const { data: upserted, error: upsertError } = await supabase
   .from("projects")
-  .upsert(records, { onConflict: "slug" })
+  .upsert(projectRecords, { onConflict: "slug" })
   .select("id, slug, title");
 
 if (upsertError) throw upsertError;
@@ -249,6 +254,24 @@ if (projectIds.length) {
     .delete()
     .in("project_id", projectIds);
   if (linkDeleteError) throw linkDeleteError;
+}
+
+const projectIdsBySlug = new Map(upserted.map((project) => [project.slug, project.id]));
+const linkRecords = records.flatMap((project) => {
+  const projectId = projectIdsBySlug.get(project.slug);
+  if (!projectId) return [];
+  return project.links.map((link, index) => ({
+    project_id: projectId,
+    label: link.label,
+    url: link.url,
+    kind: link.kind,
+    order_index: index,
+  }));
+});
+
+if (linkRecords.length) {
+  const { error: linkInsertError } = await supabase.from("project_links").insert(linkRecords);
+  if (linkInsertError) throw linkInsertError;
 }
 
 const { error: placeholderDeleteError } = await supabase
