@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { listProjects, type Project } from "@/lib/projects.functions";
 import { pageMeta } from "@/lib/metadata";
 import { getContactRows, siteConfig } from "@/lib/site-config";
@@ -29,6 +29,10 @@ function IndexPage() {
   }, [projects]);
 
   const filtered = active ? projects.filter((p) => p.tags.includes(active)) : projects;
+  const demoProjects = useMemo(
+    () => projects.filter((p) => p.links.some((l) => l.kind === "demo")),
+    [projects],
+  );
 
   return (
     <div className="min-h-screen">
@@ -42,6 +46,11 @@ function IndexPage() {
           <a href="#work" className="hover:text-foreground">
             Work
           </a>
+          {demoProjects.length > 0 && (
+            <a href="#demos" className="hover:text-foreground">
+              Demos
+            </a>
+          )}
           <a href="#about" className="hover:text-foreground">
             About
           </a>
@@ -55,6 +64,8 @@ function IndexPage() {
       </nav>
 
       <div className="mx-auto max-w-6xl border-t px-6" />
+
+      {demoProjects.length > 0 && <DemoTicker projects={demoProjects} />}
 
       {/* Hero */}
       <header className="mx-auto max-w-6xl px-4 pb-16 pt-14 sm:px-6 md:pt-24">
@@ -204,6 +215,23 @@ function IndexPage() {
           </div>
         )}
       </main>
+
+      {demoProjects.length > 0 && (
+        <>
+          <div className="mx-auto max-w-6xl border-t px-6" />
+          <section id="demos" className="mx-auto max-w-6xl px-4 pb-24 pt-16 sm:px-6">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Live demos</p>
+            <h2 className="mt-3 font-serif text-3xl leading-tight md:text-4xl">
+              Try the products <em className="text-primary">directly.</em>
+            </h2>
+            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {demoProjects.map((p) => (
+                <DemoCard key={p.id} p={p} />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
       {/* About + contact */}
       <div className="mx-auto max-w-6xl border-t px-6" />
@@ -358,6 +386,83 @@ function projectCountLabel(count: number) {
     8: "Eight",
   };
   return words[count] ?? String(count);
+}
+
+function DemoTicker({ projects }: { projects: Project[] }) {
+  const scrollToDemos = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    document.getElementById("demos")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const renderItems = (instance: string) => (
+    <>
+      <span className="mx-6 font-serif italic text-primary">Click to see demo:</span>
+      {projects.map((p) => (
+        <a
+          key={`${instance}-${p.id}`}
+          href="#demos"
+          onClick={scrollToDemos}
+          className="mx-6 uppercase tracking-[0.14em] hover:text-primary"
+        >
+          {p.title} in live demo section
+        </a>
+      ))}
+      <span className="mx-6 text-muted-foreground">·</span>
+    </>
+  );
+
+  return (
+    <div className="group relative overflow-hidden border-b py-3 text-xs">
+      <div className="flex w-max animate-[ticker_40s_linear_infinite] whitespace-nowrap group-hover:[animation-play-state:paused]">
+        {renderItems("first")}
+        {renderItems("second")}
+      </div>
+    </div>
+  );
+}
+
+function DemoCard({ p }: { p: Project }) {
+  const demo = p.links.find((l) => l.kind === "demo");
+  if (!demo) return null;
+
+  const showImage = p.media_url && p.media_type !== "mp4";
+  const imageUrl = showImage ? p.media_url : p.poster_url;
+
+  return (
+    <a
+      href={demo.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex flex-col overflow-hidden rounded-lg border bg-card transition hover:border-foreground/30 hover:shadow-[0_12px_40px_-18px_rgba(0,0,0,0.18)]"
+    >
+      <div
+        className="relative aspect-[16/10] w-full overflow-hidden border-b bg-muted"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      >
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt={p.title}
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+          />
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="font-serif text-xl leading-tight">{p.title}</h3>
+        {p.tagline && (
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{p.tagline}</p>
+        )}
+        <div className="mt-auto flex items-center gap-1 pt-4 text-sm text-primary">
+          Launch demo <span className="transition group-hover:translate-x-0.5">↗</span>
+        </div>
+      </div>
+    </a>
+  );
 }
 
 function ProjectCard({ p, index }: { p: Project; index: number }) {

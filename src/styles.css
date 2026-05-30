@@ -231,6 +231,15 @@
   text-underline-offset: 3px;
 }
 
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 /* Lovable injects this badge on hosted builds; keep it out of the public portfolio surface. */
 body :is(aside, div, section)[role="complementary"]:has(a[href*="lovable.dev/projects"]),
 body :is(aside, div, section):has(> a[href*="lovable.dev/projects"][href*="lovable-badge"]) {
